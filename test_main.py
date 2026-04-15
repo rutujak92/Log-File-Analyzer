@@ -8,73 +8,79 @@ class TestParseLine:
     """Test cases for parse_line function"""
 
     def test_parse_valid_info_log(self):
-        """Test parsing a valid INFO log line"""
+        """Test parsing a valid INFO log line returns a list"""
         line = "[2023-08-01 12:00:00] INFO (app.module): This is a log message."
         result = parse_line(line)
-        assert "Timestamp: [2023-08-01 12:00:00]" in result
-        assert "Log Level: INFO" in result
-        assert "Module: app.module" in result
-        assert "Message: This is a log message." in result
+        assert isinstance(result, list)
+        assert len(result) == 4
+        assert result[0] == "[2023-08-01 12:00:00]"
+        assert result[1] == "INFO"
+        assert result[2] == "app.module"
+        assert result[3] == "This is a log message."
 
     def test_parse_valid_error_log(self):
         """Test parsing a valid ERROR log line"""
         line = "[2023-08-01 12:30:45] ERROR (database): Connection failed."
         result = parse_line(line)
-        assert "Timestamp: [2023-08-01 12:30:45]" in result
-        assert "Log Level: ERROR" in result
-        assert "Module: database" in result
-        assert "Message: Connection failed." in result
+        assert isinstance(result, list)
+        assert result[0] == "[2023-08-01 12:30:45]"
+        assert result[1] == "ERROR"
+        assert result[2] == "database"
+        assert result[3] == "Connection failed."
 
     def test_parse_valid_warning_log(self):
         """Test parsing a valid WARNING log line"""
         line = "[2023-08-01 15:20:10] WARNING (auth): Invalid credentials."
         result = parse_line(line)
-        assert "Log Level: WARNING" in result
-        assert "Module: auth" in result
+        assert isinstance(result, list)
+        assert result[1] == "WARNING"
+        assert result[2] == "auth"
 
     def test_parse_valid_debug_log(self):
         """Test parsing a valid DEBUG log line"""
         line = "[2023-08-01 09:15:30] DEBUG (config): Loading configuration."
         result = parse_line(line)
-        assert "Log Level: DEBUG" in result
-        assert "Module: config" in result
+        assert isinstance(result, list)
+        assert result[1] == "DEBUG"
+        assert result[2] == "config"
 
     def test_parse_invalid_format(self):
-        """Test parsing a line that doesn't match the expected format"""
+        """Test parsing a line that doesn't match the expected format returns None"""
         line = "This is not a valid log line"
         result = parse_line(line)
-        assert result == "Line does not match the expected format."
+        assert result is None
 
     def test_parse_missing_timestamp(self):
-        """Test parsing a line with missing timestamp"""
+        """Test parsing a line with missing timestamp returns None"""
         line = "INFO (app.module): This is a log message."
         result = parse_line(line)
-        assert result == "Line does not match the expected format."
+        assert result is None
 
     def test_parse_malformed_timestamp(self):
-        """Test parsing a line with malformed timestamp"""
+        """Test parsing a line with malformed timestamp returns None"""
         line = "[2023-08-01] INFO (app.module): This is a log message."
         result = parse_line(line)
-        assert result == "Line does not match the expected format."
+        assert result is None
 
     def test_parse_empty_line(self):
-        """Test parsing an empty line"""
+        """Test parsing an empty line returns None"""
         line = ""
         result = parse_line(line)
-        assert result == "Line does not match the expected format."
+        assert result is None
 
     def test_parse_message_with_special_characters(self):
         """Test parsing a message with special characters"""
         line = "[2023-08-01 12:00:00] ERROR (app): Error: [500] Internal error!"
         result = parse_line(line)
-        assert "Message:" in result
-        assert "[500]" in result
+        assert isinstance(result, list)
+        assert "[500]" in result[3]
 
     def test_parse_message_with_parentheses(self):
         """Test parsing a message containing parentheses"""
         line = "[2023-08-01 12:00:00] INFO (app): User (admin) logged in successfully."
         result = parse_line(line)
-        assert "User (admin) logged in successfully." in result
+        assert isinstance(result, list)
+        assert "User (admin) logged in successfully." in result[3]
 
 
 class TestReadLogFile:
@@ -168,8 +174,11 @@ class TestIntegration:
             parsed_results = [parse_line(line) for line in lines]
             
             assert len(parsed_results) == 2
-            assert "ERROR" in parsed_results[1]
-            assert "Connection failed" in parsed_results[1]
+            assert isinstance(parsed_results[0], list)
+            assert isinstance(parsed_results[1], list)
+            assert parsed_results[0][1] == "INFO"
+            assert parsed_results[1][1] == "ERROR"
+            assert parsed_results[1][3] == "Connection failed"
         finally:
             os.unlink(temp_file)
 
@@ -185,8 +194,12 @@ class TestIntegration:
             lines = read_log_file(temp_file)
             parsed_results = [parse_line(line) for line in lines]
             
-            assert "does not match" in parsed_results[1]
-            assert "INFO" in parsed_results[0]
-            assert "WARNING" in parsed_results[2]
+            assert parsed_results[0] is not None
+            assert isinstance(parsed_results[0], list)
+            assert parsed_results[1] is None
+            assert parsed_results[2] is not None
+            assert isinstance(parsed_results[2], list)
+            assert parsed_results[0][1] == "INFO"
+            assert parsed_results[2][1] == "WARNING"
         finally:
             os.unlink(temp_file)

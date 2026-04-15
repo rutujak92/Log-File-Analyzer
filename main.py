@@ -1,4 +1,6 @@
 import re
+import csv
+import time
 pattern = r"(\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]) (\w+) \((.*?)\): (.*)"
 
 def read_log_file(file_path):
@@ -11,13 +13,19 @@ def read_log_file(file_path):
 def parse_line(line):
     split_logs= re.match(pattern, line)
     if split_logs:
-        timestamp, log_level, module, message = split_logs.groups()
-        return f"Timestamp: {timestamp}, Log Level: {log_level}, Module: {module}, Message: {message}"
+        
+        return list(split_logs.groups())
     else:
-        return "Line does not match the expected format."
+        return None
 def main():
     file_path = "data/app.log"
     log_lines = read_log_file(file_path)
-    for line in log_lines:
-        parsed_line = parse_line(line)
-        print(parsed_line)
+    with open(f"output/output{time.time()}.csv", "a") as csvfile:
+        for line in log_lines:
+                parsed_line = parse_line(line)
+                if parsed_line is not None:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(parsed_line)
+if __name__ == "__main__":    main()
+
+        
